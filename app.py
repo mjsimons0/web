@@ -22,7 +22,7 @@ REPORTS = [
 
 @app.route('/')
 def index():
-    return render_template('indecks.html')
+    return render_template('index.html')
 
 
 @app.route('/portfolio')
