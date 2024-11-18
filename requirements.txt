@@ -155,7 +155,6 @@ pygame==2.6.0
 PyGetWindow==0.0.9
 Pygments==2.18.0
 PyMsgBox==1.0.9
-pynput @ file:///D:/bld/pynput_1714652860783/work
 pyogrio==0.10.0
 pyparsing==3.1.1
 PyPDF2==3.0.1
