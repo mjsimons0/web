@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Reinforcement Learning: Highway Environment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <nav class="bg-gray-800 p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold hover:text-blue-300">Michael J. Simons</a>
+            <div>
+                <a href="/" class="mx-2 hover:text-blue-300">Home</a>
+                <a href="/portfolio" class="mx-2 hover:text-blue-300">Portfolio</a>
+                <a href="/algorithm_visualizer" class="mx-2 hover:text-blue-300">Algorithm Visualizer</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto mt-8 p-4">
+        <h1 class="text-3xl font-bold mb-4">Reinforcement Learning: Highway Environment</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <h2 class="text-2xl mb-2">Simulation Controls</h2>
+                <div class="space-y-4">
+                    <button id="startTraining" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Start Training
+                    </button>
+                    <div id="trainingStatus" class="text-xl"></div>
+                </div>
+                
+                <div class="mt-4">
+                    <canvas id="rewardChart" class="w-full"></canvas>
+                </div>
+            </div>
+            
+            <div>
+                <h2 class="text-2xl mb-2">Simulation Render</h2>
+                <div id="simulationFrames" class="grid grid-cols-3 gap-2">
+                    <!-- Frames will be dynamically inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chart = null;
+        const rewardCanvas = document.getElementById('rewardChart');
+        const simulationFrames = document.getElementById('simulationFrames');
+        const trainingStatus = document.getElementById('trainingStatus');
+        const startTrainingButton = document.getElementById('startTraining');
+
+        startTrainingButton.addEventListener('click', async () => {
+            trainingStatus.textContent = 'Training started...';
+            startTrainingButton.disabled = true;
+
+            try {
+                const response = await fetch('/api/rl_highway/start_training', {
+                    method: 'POST'
+                });
+                const sessionId = await response.text();
+
+                // WebSocket for real-time updates
+                const socket = new WebSocket(`ws://${window.location.host}/ws/rl_highway/${sessionId}`);
+
+                socket.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+
+                    if (data.type === 'frame') {
+                        const img = document.createElement('img');
+                        img.src = `data:image/png;base64,${data.frame}`;
+                        img.classList.add('w-full', 'h-auto', 'rounded');
+                        simulationFrames.appendChild(img);
+                    }
+
+                    if (data.type === 'episode_stats') {
+                        updateRewardChart(data.rewards);
+                        trainingStatus.textContent = `Episode ${data.episode}: Reward = ${data.total_reward}`;
+                    }
+
+                    if (data.type === 'training_complete') {
+                        socket.close();
+                        trainingStatus.textContent = 'Training complete';
+                        startTrainingButton.disabled = false;
+                    }
+                };
+            } catch (error) {
+                console.error('Training error:', error);
+                trainingStatus.textContent = 'Training failed';
+                startTrainingButton.disabled = false;
+            }
+        });
+
+        function updateRewardChart(rewards) {
+            if (!chart) {
+                chart = new Chart(rewardCanvas, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Episode Reward',
+                            data: [],
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            title: { display: true, text: 'Cumulative Reward per Episode' }
+                        }
+                    }
+                });
+            }
+
+            chart.data.labels.push(`Episode ${chart.data.labels.length + 1}`);
+            chart.data.datasets[0].data.push(rewards);
+            chart.update();
+        }
+    </script>
+</body>
+</html>
