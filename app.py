@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for
+from flask import Flask, render_template, url_for, redirect
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
@@ -29,11 +29,19 @@ def index():
 def portfolio():
     return render_template('portfolio.html', reports=REPORTS)
 
+@app.route('/portfolio.html')  # Redirect route
+def portfolio_redirect():
+    return redirect(url_for('portfolio'))
 
 
 @app.route('/algorithm_visualizer')
 def algorithm_visualizer():
     return render_template('algorithm_visualizer.html')
+
+
+@app.route('/algorithm_visualizer.html')  # Redirect route
+def algorithm_visualizer_redirect():
+    return redirect(url_for('algorithm_visualizer'))
 
 
 @app.route('/<filename>')
@@ -42,4 +50,4 @@ def report(filename):
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, debug=True)
+    app.run(host='0.0.0.0', port=80, debug=True)    
