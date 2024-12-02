@@ -401,7 +401,7 @@ async function pathFind(start, target) {
 				if (node !== start && node !== target) {
 					node.element.style.backgroundColor = "#ff8080";
 				}
-				await sleep(0.1 * speed);
+				await sleep(0.5 * speed);
 			}
 
 			return;
