@@ -126,7 +126,7 @@ function switchAlg(direction) {
 			document.getElementById('alg').innerHTML = "Switch Algorithm (1/6)";
 		}
 		else if (traversal == "bdbfs") {
-			  document.getElementById("alg_description").innerHTML = "<b>Bidirectional BFS:</b><br> <b>(needs implementation)</b><br> A specialized algorithm that optimizes the traditional BFS by conducting two simultaneous searches: one from the start node and one from the target node. Both searches proceed in a breadth-first manner and meet in the middle, significantly reducing the number of nodes explored. The worst-case time complexity is <b>O(b<sup>d/2</sup>)</b> " + kstr + ". This algorithm is particularly effective for pathfinding in large unweighted graphs."
+			  document.getElementById("alg_description").innerHTML = "<b>Bidirectional BFS:</b><br> A specialized algorithm that optimizes the traditional BFS by conducting two simultaneous searches: one from the start node and one from the target node. Both searches proceed in a breadth-first manner and meet in the middle, significantly reducing the number of nodes explored. The worst-case time complexity is <b>O(b<sup>d/2</sup>)</b> " + kstr + ". This algorithm is particularly effective for pathfinding in large unweighted graphs."
 			document.getElementById('alg').innerHTML = "Switch Algorithm (6/6)";
 		}
     }
@@ -334,6 +334,83 @@ async function pathFind(start, target) {
         finding = false;
         return null; // No path found
     }
+	else if (traversal === "bdbfs") {
+		resetNodeProperties();
+
+		let startQueue = [start];
+		let targetQueue = [target];
+		let startVisited = new Map();
+		let targetVisited = new Map();
+		let meetNode = null;
+
+		startVisited.set(start, null);
+		targetVisited.set(target, null);
+
+
+		async function bfsStep(queue, visited, otherVisited, isStart) {
+			if (queue.length === 0) return false;
+			let currentNode = queue.shift();
+
+			if (currentNode !== start && currentNode !== target) {
+				currentNode.element.style.backgroundColor = isStart ? "#4e6c98" : "#5778a9";
+			}
+
+			for (let neighbor of currentNode["adjList"]) {
+				if (!neighbor["wall"] && !visited.has(neighbor)) {
+					visited.set(neighbor, currentNode);
+					queue.push(neighbor);
+
+					if (otherVisited.has(neighbor)) {
+						meetNode = neighbor;
+						return true;
+					}
+
+					if (neighbor !== start && neighbor !== target) {
+						neighbor.element.style.backgroundColor = isStart ? "#5778a9" : "#4e6c98";
+					}
+					await sleep(0.1 * speed);
+				}
+			}
+			return false;
+		}
+
+		while (startQueue.length > 0 && targetQueue.length > 0 && finding) {
+			if (await bfsStep(startQueue, startVisited, targetVisited, true)) break;
+			if (await bfsStep(targetQueue, targetVisited, startVisited, false)) break;
+		}
+
+		if (meetNode) {
+			finding = false;
+
+			let path = [];
+			let currentNode = meetNode;
+			while (currentNode) {
+				path.push(currentNode);
+				currentNode = startVisited.get(currentNode);
+			}
+			path.reverse();
+
+			currentNode = targetVisited.get(meetNode);
+			while (currentNode) {
+				path.push(currentNode);
+				currentNode = targetVisited.get(currentNode);
+			}
+
+
+			for (let node of path) {
+				if (node !== start && node !== target) {
+					node.element.style.backgroundColor = "#ff8080";
+				}
+				await sleep(0.1 * speed);
+			}
+
+			return;
+		}
+
+		finding = false;
+		alert("No path found");
+	}
+
 
 
     // Other algorithms: Dijkstra, A*, BFS, DFS
